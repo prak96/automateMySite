@@ -1,0 +1,61 @@
+# https://aka.ms/yaml
+#to check pr trigger for main
+trigger:
+    branches:
+        include:
+        - main
+        - release/*
+        - dev
+
+        exclude:
+        - hotfix/* 
+    batch: true
+
+pr:
+    branches:
+        include:
+        - release/*
+
+        exclude:
+        - dev
+        - main
+         
+
+variables:
+  BuildConfig: 'Debug'
+
+pool:
+  vmImage: windows-latest
+
+stages:
+- stage: CIBuild
+  jobs:
+  - job: BuildJob
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'restore task'
+      inputs:
+        command: restore
+        projects: $(ProjectName)
+        feedsToUse: select
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'build task'
+      inputs:
+        command: build
+        projects: $(projectName)
+        arguments: -c $(BuildConfig)
+
+    - task: DotNetCoreCLI@2
+      displayName: 'publish task'
+      inputs:
+        command: publish
+        projects: $(ProjectName)
+        arguments: -c $(buildConfig) -o $(Build.ArtifactsDirectory)
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'publish artifact task'
+      inputs:
+        ArtifactName: 'depo'
+        publishLocation: Container
+        PathtoPublish: $(Build.ArtifactsDirectory)
